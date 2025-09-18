@@ -144,13 +144,4 @@ bar = px.bar(
     labels={"Tourism Index": "Average Tourism Index"}
 )
 
-# Fix axis title spacing
-bar.update_layout(
-    xaxis_title="Amenities",
-    yaxis_title="Average Tourism Index",
-    xaxis=dict(title_standoff=10),
-    yaxis=dict(title_standoff=10),
-    title_x=0.5
-)
-
 st.plotly_chart(bar, use_container_width=True)
