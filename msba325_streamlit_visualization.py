@@ -143,5 +143,18 @@ bar = px.bar(
     title="Average Tourism Index by Existence of Tourism Amenities",
     labels={"Tourism Index": "Average Tourism Index"}
 )
+bar.update_layout(
+    xaxis=dict(
+        tickangle=0,         # keep them horizontal
+        tickfont=dict(size=14),  # make them clearer
+        tickpadding=0        # reduce the distance from axis line
+    ),
+    yaxis=dict(
+        title="Average Tourism Index",
+        title_standoff=10
+    ),
+    xaxis_title="Amenities",
+    title_x=0.5
+)
 
 st.plotly_chart(bar, use_container_width=True)
