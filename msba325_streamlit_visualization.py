@@ -19,24 +19,60 @@ st.title("📊 Tourism Data Visualization")
 st.write("Exploring the impact of tourism amenities on the Tourism Index in Lebanon.")
 
 # ---- Load Data ----
-df = pd.read_csv("dataviz.csv")
+df = pd.read_csv("/content/dataviz.csv")
 
 # Clean governorate names from refArea URL
 df["refArea_clean"] = df["refArea"].str.split("/").str[-1].str.replace("_", " ")
 
+# ---- Feature Engineering: Tourism Amenities ----
+df["Tourism Amenities"] = df[[
+    "Total number of hotels",
+    "Existence of guest houses - exists",
+    "Existence of restaurants - exists",
+    "Existence of initiatives and projects in the past five years to improve the tourism sector - exists",
+    "Existence of cafes - exists"
+]].sum(axis=1)
+
+# ---- Calculations for Streamlit Cards ----
+total_towns = df["Town"].nunique()
+sum_of_initiatives = df["Existence of initiatives and projects in the past five years to improve the tourism sector - exists"].sum()
+towns_no_initiatives = df[df["Existence of initiatives and projects in the past five years to improve the tourism sector - exists"] == 0]
+count_towns_no_initiatives = len(towns_no_initiatives)
+highest_tourism_index_row = df.loc[df['Tourism Index'].idxmax()]
+town_with_highest_index = highest_tourism_index_row['Town']
+ref_area_highest_index = highest_tourism_index_row['refArea_clean']
+
+# ---- Streamlit Cards ----
+st.subheader("Tourism Statistics")
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric(label="Total Towns", value=total_towns)
+
+with col2:
+    st.metric(label="Total Initiatives", value=sum_of_initiatives)
+
+with col3:
+    st.metric(label="Towns with No Initiatives", value=count_towns_no_initiatives)
+
+with col4:
+    st.info(f"Town with Highest Tourism Index: {town_with_highest_index} in {ref_area_highest_index}")
+
+
 # ---- Visualization 1: Scatter Plot ----
-st.subheader("Scatter Plot: Hotels vs Tourism Index")
+st.subheader("Scatter Plot: Tourism Amenities vs Tourism Index")
 
 scatter = px.scatter(
     df,
-    x="Total number of hotels",
+    x="Tourism Amenities",  # Use the new feature
     y="Tourism Index",
     color="refArea_clean",
     hover_name="Town",
-    size="Total number of hotels",
-    title="Impact of Hotels on Tourism Index",
+    size="Tourism Amenities", # Use the new feature
+    title="Impact of Tourism Amenities on Tourism Index",
     labels={
-        "Total number of hotels": "Number of Hotels",
+        "Tourism Amenities": "Tourism Amenities Score", # Update label
         "Tourism Index": "Tourism Index",
         "refArea_clean": "Governorate"
     }
@@ -80,4 +116,3 @@ bar = px.bar(
 )
 
 st.plotly_chart(bar, use_container_width=True)
-
