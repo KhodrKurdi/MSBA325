@@ -19,7 +19,7 @@ st.title("📊 Tourism Data Visualization")
 st.write("Exploring the impact of tourism amenities on the Tourism Index in Lebanon.")
 
 # ---- Load Data ----
-df = pd.read_csv("dataviz.csv")
+df = pd.read_csv("dataviz.csv")   # make sure dataviz.csv is in the same repo as app.py
 
 # Clean governorate names from refArea URL
 df["refArea_clean"] = df["refArea"].str.split("/").str[-1].str.replace("_", " ")
@@ -33,14 +33,36 @@ df["Tourism Amenities"] = df[[
     "Existence of cafes - exists"
 ]].sum(axis=1)
 
-# ---- Calculations for Streamlit Cards ----
-total_towns = df["Town"].nunique()
-sum_of_initiatives = df["Existence of initiatives and projects in the past five years to improve the tourism sector - exists"].sum()
-towns_no_initiatives = df[df["Existence of initiatives and projects in the past five years to improve the tourism sector - exists"] == 0]
-count_towns_no_initiatives = len(towns_no_initiatives)
-highest_tourism_index_row = df.loc[df['Tourism Index'].idxmax()]
-town_with_highest_index = highest_tourism_index_row['Town']
-ref_area_highest_index = highest_tourism_index_row['refArea_clean']
+# ---- Sidebar Filters ----
+st.sidebar.header("Filters")
+
+# Governorate filter
+selected_governorates = st.sidebar.multiselect(
+    "Select Governorates:",
+    options=df["refArea_clean"].unique(),
+    default=df["refArea_clean"].unique()
+)
+
+# Index range filter
+min_index, max_index = int(df["Tourism Index"].min()), int(df["Tourism Index"].max())
+selected_range = st.sidebar.slider(
+    "Select Tourism Index Range:",
+    min_value=min_index,
+    max_value=max_index,
+    value=(min_index, max_index)
+)
+
+# Scatter X-axis selector
+x_axis = st.sidebar.selectbox(
+    "Select X-axis for Scatter Plot:",
+    ["Tourism Amenities", "Total number of hotels", "Total number of cafes"]
+)
+
+# Apply filters
+df_filtered = df[
+    (df["refArea_clean"].isin(selected_governorates)) &
+    (df["Tourism Index"].between(selected_range[0], selected_range[1]))
+]
 
 # ---- Streamlit Cards ----
 st.subheader("Tourism Statistics")
@@ -48,31 +70,32 @@ st.subheader("Tourism Statistics")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric(label="Total Towns", value=total_towns)
+    st.metric(label="Total Towns", value=df_filtered["Town"].nunique())
 
 with col2:
-    st.metric(label="Total Initiatives", value=sum_of_initiatives)
+    st.metric(label="Total Initiatives", value=df_filtered["Existence of initiatives and projects in the past five years to improve the tourism sector - exists"].sum())
 
 with col3:
-    st.metric(label="Towns with No Initiatives", value=count_towns_no_initiatives)
+    towns_no_initiatives = df_filtered[df_filtered["Existence of initiatives and projects in the past five years to improve the tourism sector - exists"] == 0]
+    st.metric(label="Towns with No Initiatives", value=len(towns_no_initiatives))
 
 with col4:
-    st.info(f"Town with Highest Tourism Index: {town_with_highest_index} in {ref_area_highest_index}")
-
+    highest_tourism_index_row = df_filtered.loc[df_filtered['Tourism Index'].idxmax()]
+    st.info(f"Highest Tourism Index: {highest_tourism_index_row['Town']} ({highest_tourism_index_row['refArea_clean']})")
 
 # ---- Visualization 1: Scatter Plot ----
-st.subheader("Scatter Plot: Tourism Amenities vs Tourism Index")
+st.subheader("Scatter Plot")
 
 scatter = px.scatter(
-    df,
-    x="Tourism Amenities",  # Use the new feature
+    df_filtered,
+    x=x_axis,
     y="Tourism Index",
     color="refArea_clean",
     hover_name="Town",
-    size="Tourism Amenities", # Use the new feature
-    title="Impact of Tourism Amenities on Tourism Index",
+    size=x_axis,
+    title=f"Impact of {x_axis} on Tourism Index",
     labels={
-        "Tourism Amenities": "Tourism Amenities Score", # Update label
+        x_axis: x_axis,
         "Tourism Index": "Tourism Index",
         "refArea_clean": "Governorate"
     }
@@ -84,19 +107,19 @@ st.plotly_chart(scatter, use_container_width=True)
 st.subheader("Clustered Column Chart: Average Tourism Index by Amenities")
 
 # Hotels
-hotel_tourism = df.groupby("Existence of hotels - exists")["Tourism Index"].mean().reset_index()
+hotel_tourism = df_filtered.groupby("Existence of hotels - exists")["Tourism Index"].mean().reset_index()
 hotel_tourism["Existence of hotels - exists"] = hotel_tourism["Existence of hotels - exists"].map({0: "No Hotel", 1: "Hotel"})
 hotel_tourism = hotel_tourism.rename(columns={"Existence of hotels - exists": "Existence"})
 hotel_tourism["Category"] = "Hotels"
 
 # Restaurants
-restaurant_tourism = df.groupby("Existence of restaurants - exists")["Tourism Index"].mean().reset_index()
+restaurant_tourism = df_filtered.groupby("Existence of restaurants - exists")["Tourism Index"].mean().reset_index()
 restaurant_tourism["Existence of restaurants - exists"] = restaurant_tourism["Existence of restaurants - exists"].map({0: "No Restaurant", 1: "Restaurant"})
 restaurant_tourism = restaurant_tourism.rename(columns={"Existence of restaurants - exists": "Existence"})
 restaurant_tourism["Category"] = "Restaurants"
 
 # Guest Houses
-guest_house_tourism = df.groupby("Existence of guest houses - exists")["Tourism Index"].mean().reset_index()
+guest_house_tourism = df_filtered.groupby("Existence of guest houses - exists")["Tourism Index"].mean().reset_index()
 guest_house_tourism["Existence of guest houses - exists"] = guest_house_tourism["Existence of guest houses - exists"].map({0: "No Guest House", 1: "Guest House"})
 guest_house_tourism = guest_house_tourism.rename(columns={"Existence of guest houses - exists": "Existence"})
 guest_house_tourism["Category"] = "Guest Houses"
@@ -104,7 +127,6 @@ guest_house_tourism["Category"] = "Guest Houses"
 # Combine data
 combined_tourism = pd.concat([hotel_tourism, restaurant_tourism, guest_house_tourism])
 
-# Grouped Bar Chart
 bar = px.bar(
     combined_tourism,
     x="Category",
@@ -116,3 +138,4 @@ bar = px.bar(
 )
 
 st.plotly_chart(bar, use_container_width=True)
+
