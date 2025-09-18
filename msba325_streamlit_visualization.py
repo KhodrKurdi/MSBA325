@@ -124,9 +124,16 @@ guest_house_tourism["Existence of guest houses - exists"] = guest_house_tourism[
 guest_house_tourism = guest_house_tourism.rename(columns={"Existence of guest houses - exists": "Existence"})
 guest_house_tourism["Category"] = "Guest Houses"
 
-# Combine data
-combined_tourism = pd.concat([hotel_tourism, restaurant_tourism, guest_house_tourism])
+# Cafes
+cafe_tourism = df_filtered.groupby("Existence of cafes - exists")["Tourism Index"].mean().reset_index()
+cafe_tourism["Existence of cafes - exists"] = cafe_tourism["Existence of cafes - exists"].map({0: "No Cafe", 1: "Cafe"})
+cafe_tourism = cafe_tourism.rename(columns={"Existence of cafes - exists": "Existence"})
+cafe_tourism["Category"] = "Cafes"
 
+# Combine all
+combined_tourism = pd.concat([hotel_tourism, restaurant_tourism, guest_house_tourism, cafe_tourism])
+
+# Grouped Bar Chart
 bar = px.bar(
     combined_tourism,
     x="Category",
@@ -138,4 +145,3 @@ bar = px.bar(
 )
 
 st.plotly_chart(bar, use_container_width=True)
-
