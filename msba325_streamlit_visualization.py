@@ -19,7 +19,7 @@ st.title("📊 Tourism Data Visualization")
 st.write("Exploring the impact of tourism amenities on the Tourism Index in Lebanon.")
 
 # ---- Load Data ----
-df = pd.read_csv(dataviz.csv)
+df = pd.read_csv("dataviz.csv")
 
 # Clean governorate names from refArea URL
 df["refArea_clean"] = df["refArea"].str.split("/").str[-1].str.replace("_", " ")
