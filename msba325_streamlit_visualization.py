@@ -55,8 +55,15 @@ selected_range = st.sidebar.slider(
 # Scatter X-axis selector
 x_axis = st.sidebar.selectbox(
     "Select X-axis for Scatter Plot:",
-    ["Tourism Amenities", "Total number of hotels", "Total number of cafes"]
+    [
+        "Tourism Amenities",
+        "Total number of hotels",
+        "Total number of restaurants",
+        "Total number of cafes",
+        "Total number of guest houses"
+    ]
 )
+
 
 # Apply filters
 df_filtered = df[
